@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uber Wait Tracker</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #171a21;
+      --card-2: #20242d;
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --border: #2d3340;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1f2937 0%, var(--bg) 45%, #050505 100%);
+      color: var(--text);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    button, select, input {
+      border: 1px solid var(--border);
+      background: var(--card-2);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    button {
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+      font-weight: 700;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #03120a;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: #272b35;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fecaca;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .timer-card {
+      background: linear-gradient(180deg, var(--card) 0%, #12141a 100%);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .zone-select {
+      width: 100%;
+    }
+
+    .time {
+      font-size: 2.7rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin: 12px 0 4px;
+    }
+
+    .status {
+      color: var(--muted);
+      margin-bottom: 14px;
+      font-size: 0.95rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      background: #111827;
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 10px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .actions .wide {
+      grid-column: span 2;
+    }
+
+    .summary {
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.22);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 18px;
+      color: #dcfce7;
+    }
+
+    .summary strong {
+      color: #86efac;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 18px;
+      padding: 30px;
+    }
+
+    .small {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Uber Wait Tracker</h1>
+      <p class="subtitle">Cronómetros por zona para medir cuánto esperas antes de recibir una buena carrera.</p>
+      <div class="top-actions">
+        <button class="btn-primary" onclick="addTimer()">+ Agregar cronómetro</button>
+        <button class="btn-secondary" onclick="exportData()">Exportar CSV</button>
+        <button class="btn-danger" onclick="clearAll()">Borrar todo</button>
+      </div>
+    </header>
+
+    <section class="summary" id="summaryBox">
+      <strong>Tip:</strong> inicia un cronómetro cuando llegues a una zona. Cuando recibas una carrera buena, pausa y guarda mentalmente ese tiempo.
+    </section>
+
+    <main class="grid" id="timersGrid"></main>
+  </div>
+
+  <script>
+    const zones = [
+      "MIA Airport",
+      "FLL Airport",
+      "Brickell",
+      "Downtown Miami",
+      "South Beach",
+      "Miami Beach",
+      "Wynwood",
+      "Design District",
+      "Midtown",
+      "Coral Gables",
+      "Coconut Grove",
+      "Key Biscayne",
+      "Aventura",
+      "Sunny Isles",
+      "Bal Harbour",
+      "Doral",
+      "Kendall",
+      "Waterford District",
+      "Dadeland",
+      "Pinecrest",
+      "South Miami",
+      "Little Havana",
+      "Edgewater",
+      "North Miami",
+      "Fort Lauderdale",
+      "Hollywood",
+      "Hallandale Beach",
+      "Las Olas",
+      "Hard Rock / Hollywood",
+      "PortMiami",
+      "Cruise Terminal",
+      "Other"
+    ];
+
+    let timers = JSON.parse(localStorage.getItem("uberTimers")) || [];
+    let interval = null;
+
+    function saveTimers() {
+      localStorage.setItem("uberTimers", JSON.stringify(timers));
+    }
+
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return [h, m, s].map(v => String(v).padStart(2, "0")).join(":");
+    }
+
+    function addTimer() {
+      const newTimer = {
+        id: Date.now(),
+        zone: "MIA Airport",
+        seconds: 0,
+        running: false,
+        createdAt: new Date().toLocaleString()
+      };
+      timers.unshift(newTimer);
+      saveTimers();
+      renderTimers();
+    }
+
+    function toggleTimer(id) {
+      timers = timers.map(timer => {
+        if (timer.id === id) {
+          return { ...timer, running: !timer.running };
+        }
+        return timer;
+      });
+      saveTimers();
+      renderTimers();
+    }
+
+    function resetTimer(id) {
+      timers = timers.map(timer => {
+        if (timer.id === id) {
+          return { ...timer, seconds: 0, running: false };
+        }
+        return timer;
+      });
+      saveTimers();
+      renderTimers();
+    }
+
+    function deleteTimer(id) {
+      timers = timers.filter(timer => timer.id !== id);
+      saveTimers();
+      renderTimers();
+    }
+
+    function updateZone(id, zone) {
+      timers = timers.map(timer => {
+        if (timer.id === id) {
+          return { ...timer, zone };
+        }
+        return timer;
+      });
+      saveTimers();
+      renderTimers();
+    }
+
+    function clearAll() {
+      const confirmDelete = confirm("¿Seguro que quieres borrar todos los cronómetros?");
+      if (!confirmDelete) return;
+      timers = [];
+      saveTimers();
+      renderTimers();
+    }
+
+    function getWaitLabel(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 10) return "Espera corta";
+      if (minutes < 25) return "Espera normal";
+      if (minutes < 45) return "Revisar zona";
+      return "Posible zona lenta";
+    }
+
+    function renderTimers() {
+      const grid = document.getElementById("timersGrid");
+      const summaryBox = document.getElementById("summaryBox");
+
+      if (timers.length === 0) {
+        grid.innerHTML = `<div class="empty">No tienes cronómetros activos. Agrega uno para empezar.</div>`;
+        summaryBox.innerHTML = `<strong>Tip:</strong> crea un cronómetro por cada zona donde estés esperando rides.`;
+        return;
+      }
+
+      const runningCount = timers.filter(t => t.running).length;
+      const longest = [...timers].sort((a, b) => b.seconds - a.seconds)[0];
+      summaryBox.innerHTML = `
+        <strong>${timers.length}</strong> cronómetro(s) activos ·
+        <strong>${runningCount}</strong> corriendo ·
+        Mayor espera: <strong>${longest.zone} / ${formatTime(longest.seconds)}</strong>
+      `;
+
+      grid.innerHTML = timers.map(timer => `
+        <article class="timer-card">
+          <div class="card-top">
+            <select class="zone-select" onchange="updateZone(${timer.id}, this.value)">
+              ${zones.map(zone => `
+                <option value="${zone}" ${timer.zone === zone ? "selected" : ""}>${zone}</option>
+              `).join("")}
+            </select>
+          </div>
+
+          <div class="badge">Zona: ${timer.zone}</div>
+          <div class="time">${formatTime(timer.seconds)}</div>
+          <div class="status">${getWaitLabel(timer.seconds)} · Creado: ${timer.createdAt}</div>
+
+          <div class="actions">
+            <button class="${timer.running ? "btn-secondary" : "btn-primary"}" onclick="toggleTimer(${timer.id})">
+              ${timer.running ? "Pausar" : "Iniciar"}
+            </button>
+            <button class="btn-secondary" onclick="resetTimer(${timer.id})">Reset</button>
+            <button class="btn-danger wide" onclick="deleteTimer(${timer.id})">Borrar cronómetro</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function tick() {
+      let changed = false;
+      timers = timers.map(timer => {
+        if (timer.running) {
+          changed = true;
+          return { ...timer, seconds: timer.seconds + 1 };
+        }
+        return timer;
+      });
+
+      if (changed) {
+        saveTimers();
+        renderTimers();
+      }
+    }
+
+    function exportData() {
+      if (timers.length === 0) {
+        alert("No hay datos para exportar.");
+        return;
+      }
+
+      const rows = [
+        ["Zone", "Wait Time", "Seconds", "Status", "Created At"],
+        ...timers.map(timer => [
+          timer.zone,
+          formatTime(timer.seconds),
+          timer.seconds,
+          getWaitLabel(timer.seconds),
+          timer.createdAt
+        ])
+      ];
+
+      const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "uber-wait-tracker.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    if (timers.length === 0) {
+      addTimer();
+    } else {
+      renderTimers();
+    }
+
+    interval = setInterval(tick, 1000);
+  </script>
+</body>
+</html>
