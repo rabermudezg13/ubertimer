@@ -1,0 +1,18 @@
+{
+  "name": "Uber Wait Tracker",
+  "short_name": "Uber Tracker",
+  "description": "Cron\u00f3metros por zona para medir tiempos de espera de Uber y goodies consumidos.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
