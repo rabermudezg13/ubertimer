@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uber Wait Tracker</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #171a21;
+      --card-2: #20242d;
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --border: #2d3340;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1f2937 0%, var(--bg) 45%, #050505 100%);
+      color: var(--text);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .version {
+      display: inline-block;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      color: #86efac;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.82rem;
+      width: fit-content;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    button, select, input {
+      border: 1px solid var(--border);
+      background: var(--card-2);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    select {
+      appearance: auto;
+      -webkit-appearance: menulist;
+    }
+
+    button {
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+      font-weight: 700;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #03120a;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: #272b35;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fecaca;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    .timer-card {
+      background: linear-gradient(180deg, var(--card) 0%, #12141a 100%);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+    }
+
+    .card-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .zone-select,
+    .ride-select {
+      width: 100%;
+    }
+
+    .timer-body {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .time {
+      font-size: 2.7rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin: 12px 0 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status {
+      color: var(--muted);
+      margin-bottom: 14px;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      background: #111827;
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 10px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      display: inline-block;
+    }
+
+    .dot.on {
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+    }
+
+    .goodies-box {
+      background: rgba(255,255,255,0.035);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 11px;
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    .goodies-title {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .goodie-row {
+      display: grid;
+      grid-template-columns: 1fr 34px 32px 34px;
+      gap: 6px;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 0.86rem;
+    }
+
+    .mini-btn {
+      padding: 5px 0;
+      border-radius: 9px;
+      font-weight: 900;
+    }
+
+    .count {
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .actions .wide {
+      grid-column: span 2;
+    }
+
+    .summary {
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.22);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 18px;
+      color: #dcfce7;
+      line-height: 1.5;
+    }
+
+    .summary strong {
+      color: #86efac;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 18px;
+      padding: 30px;
+      grid-column: 1 / -1;
+    }
+
+    @media (max-width: 620px) {
+      .card-top,
+      .timer-body {
+        grid-template-columns: 1fr;
+      }
+
+      .time {
+        font-size: 2.45rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Uber Wait Tracker</h1>
+      <span class="version">VERSION 3 · Ride Type · Goodies · Daily Average</span>
+      <p class="subtitle">
+        Cronómetros por zona para medir cuánto esperas antes de recibir una buena carrera.
+      </p>
+      <div class="top-actions">
+        <button class="btn-primary" onclick="addTimer()">+ Agregar cronómetro</button>
+        <button class="btn-secondary" onclick="exportData()">Exportar CSV</button>
+        <button class="btn-danger" onclick="clearAll()">Borrar todo</button>
+      </div>
+    </header>
+
+    <section class="summary" id="summaryBox">
+      <strong>Tip:</strong> inicia un cronómetro cuando llegues a una zona. Cuando recibas una carrera buena, pausa y guarda ese tiempo.
+    </section>
+
+    <main class="grid" id="timersGrid"></main>
+  </div>
+
+  <script>
+    const zones = [
+      "Aventura",
+      "Bal Harbour",
+      "Brickell",
+      "Calle 8",
+      "Coconut Grove",
+      "Coral Gables",
+      "Cruise Terminal",
+      "Dadeland",
+      "Design District",
+      "Doral",
+      "Downtown Miami",
+      "Edgewater",
+      "FLL Airport",
+      "Fort Lauderdale",
+      "Hallandale Beach",
+      "Hard Rock / Hollywood",
+      "Hollywood",
+      "Key Biscayne",
+      "Kendall",
+      "Las Olas",
+      "Little Havana",
+      "MIA Airport",
+      "Miami Beach",
+      "Midtown",
+      "North Miami",
+      "Other",
+      "Pinecrest",
+      "PortMiami",
+      "South Beach",
+      "South Miami",
+      "Sunny Isles",
+      "Waterford District",
+      "Wynwood"
+    ];
+
+    const rideTypes = ["Black", "Black SUV", "Premier", "XL"];
+
+    const goodies = [
+      "Tiny Water",
+      "Fiji Water",
+      "Sparkling Water",
+      "Regular Coke",
+      "Coke Zero",
+      "Fanta",
+      "Pistachios",
+      "Welch's",
+      "Cookies",
+      "Candies",
+      "Gums",
+      "Wipes"
+    ];
+
+    let timers = JSON.parse(localStorage.getItem("uberTimersV3")) || [];
+
+    function todayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function saveTimers() {
+      localStorage.setItem("uberTimersV3", JSON.stringify(timers));
+    }
+
+    function formatTime(seconds) {
+      seconds = Math.max(0, Math.floor(seconds));
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return [h, m, s].map(v => String(v).padStart(2, "0")).join(":");
+    }
+
+    function emptyGoodies() {
+      return Object.fromEntries(goodies.map(item => [item, 0]));
+    }
+
+    function normalizeTimer(timer) {
+      return {
+        ...timer,
+        zone: timer.zone || "MIA Airport",
+        rideType: timer.rideType || "Black",
+        dateKey: timer.dateKey || todayKey(),
+        elapsedBeforePause: timer.elapsedBeforePause || timer.seconds || 0,
+        startTimestamp: timer.startTimestamp || null,
+        running: timer.running || false,
+        consumedGoodies: {
+          ...emptyGoodies(),
+          ...(timer.consumedGoodies || {})
+        }
+      };
+    }
+
+    function getElapsedSeconds(timer) {
+      const base = timer.elapsedBeforePause || 0;
+      if (!timer.running || !timer.startTimestamp) return base;
+      return base + Math.floor((Date.now() - timer.startTimestamp) / 1000);
+    }
+
+    function addTimer() {
+      const newTimer = {
+        id: Date.now(),
+        zone: "MIA Airport",
+        rideType: "Black",
+        elapsedBeforePause: 0,
+        startTimestamp: null,
+        running: false,
+        createdAt: new Date().toLocaleString(),
+        dateKey: todayKey(),
+        lastPausedAt: null,
+        consumedGoodies: emptyGoodies()
+      };
+
+      timers.unshift(newTimer);
+      saveTimers();
+      renderTimers();
+    }
+
+    function toggleTimer(id) {
+      timers = timers.map(rawTimer => {
+        const timer = normalizeTimer(rawTimer);
+        if (timer.id !== id) return timer;
+
+        if (timer.running) {
+          return {
+            ...timer,
+            running: false,
+            elapsedBeforePause: getElapsedSeconds(timer),
+            startTimestamp: null,
+            lastPausedAt: new Date().toLocaleString()
+          };
+        }
+
+        return {
+          ...timer,
+          running: true,
+          startTimestamp: Date.now()
+        };
+      });
+
+      saveTimers();
+      renderTimers();
+    }
+
+    function resetTimer(id) {
+      timers = timers.map(rawTimer => {
+        const timer = normalizeTimer(rawTimer);
+        if (timer.id !== id) return timer;
+
+        return {
+          ...timer,
+          elapsedBeforePause: 0,
+          startTimestamp: null,
+          running: false,
+          lastPausedAt: null,
+          consumedGoodies: emptyGoodies()
+        };
+      });
+
+      saveTimers();
+      renderTimers();
+    }
+
+    function deleteTimer(id) {
+      timers = timers.filter(timer => timer.id !== id);
+      saveTimers();
+      renderTimers();
+    }
+
+    function updateZone(id, zone) {
+      timers = timers.map(rawTimer => {
+        const timer = normalizeTimer(rawTimer);
+        if (timer.id === id) return { ...timer, zone };
+        return timer;
+      });
+      saveTimers();
+      renderTimers();
+    }
+
+    function updateRideType(id, rideType) {
+      timers = timers.map(rawTimer => {
+        const timer = normalizeTimer(rawTimer);
+        if (timer.id === id) return { ...timer, rideType };
+        return timer;
+      });
+      saveTimers();
+      renderTimers();
+    }
+
+    function changeGoodie(id, goodieName, amount) {
+      timers = timers.map(rawTimer => {
+        const timer = normalizeTimer(rawTimer);
+        if (timer.id !== id) return timer;
+
+        const current = Number(timer.consumedGoodies[goodieName] || 0);
+
+        return {
+          ...timer,
+          consumedGoodies: {
+            ...timer.consumedGoodies,
+            [goodieName]: Math.max(0, current + amount)
+          }
+        };
+      });
+
+      saveTimers();
+      updateLiveDisplay();
+    }
+
+    function clearAll() {
+      const confirmDelete = confirm("¿Seguro que quieres borrar todos los cronómetros?");
+      if (!confirmDelete) return;
+      timers = [];
+      saveTimers();
+      renderTimers();
+    }
+
+    function getWaitLabel(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 10) return "Espera corta";
+      if (minutes < 25) return "Espera normal";
+      if (minutes < 45) return "Revisar zona";
+      return "Posible zona lenta";
+    }
+
+    function getGoodiesSummary(timer) {
+      const used = goodies
+        .filter(item => Number(timer.consumedGoodies[item] || 0) > 0)
+        .map(item => `${item} x${timer.consumedGoodies[item]}`);
+
+      return used.length ? used.join(", ") : "None";
+    }
+
+    function averageWaitToday() {
+      const today = todayKey();
+      const todayTimers = timers.map(normalizeTimer).filter(timer => timer.dateKey === today);
+
+      if (todayTimers.length === 0) return { count: 0, average: 0 };
+
+      const total = todayTimers.reduce((sum, timer) => sum + getElapsedSeconds(timer), 0);
+
+      return {
+        count: todayTimers.length,
+        average: Math.round(total / todayTimers.length)
+      };
+    }
+
+    function renderSummary() {
+      const summaryBox = document.getElementById("summaryBox");
+
+      if (timers.length === 0) {
+        summaryBox.innerHTML = `<strong>Tip:</strong> crea un cronómetro por cada zona donde estés esperando rides.`;
+        return;
+      }
+
+      const normalized = timers.map(normalizeTimer);
+      const runningCount = normalized.filter(t => t.running).length;
+      const longest = [...normalized].sort((a, b) => getElapsedSeconds(b) - getElapsedSeconds(a))[0];
+      const daily = averageWaitToday();
+
+      summaryBox.innerHTML = `
+        <strong>${timers.length}</strong> cronómetro(s) activos ·
+        <strong>${runningCount}</strong> corriendo<br>
+        Promedio de espera de hoy: <strong>${formatTime(daily.average)}</strong> / ${daily.count} registro(s)<br>
+        Mayor espera: <strong>${longest.zone} / ${formatTime(getElapsedSeconds(longest))}</strong>
+      `;
+    }
+
+    function renderTimers() {
+      const grid = document.getElementById("timersGrid");
+      timers = timers.map(normalizeTimer);
+
+      if (timers.length === 0) {
+        grid.innerHTML = `<div class="empty">No tienes cronómetros activos. Agrega uno para empezar.</div>`;
+        renderSummary();
+        saveTimers();
+        return;
+      }
+
+      renderSummary();
+
+      grid.innerHTML = timers.map(timer => {
+        const elapsed = getElapsedSeconds(timer);
+
+        return `
+          <article class="timer-card">
+            <div class="card-top">
+              <select class="zone-select" onchange="updateZone(${timer.id}, this.value)">
+                ${zones.map(zone => `
+                  <option value="${zone}" ${timer.zone === zone ? "selected" : ""}>${zone}</option>
+                `).join("")}
+              </select>
+
+              <select class="ride-select" onchange="updateRideType(${timer.id}, this.value)">
+                ${rideTypes.map(type => `
+                  <option value="${type}" ${timer.rideType === type ? "selected" : ""}>${type}</option>
+                `).join("")}
+              </select>
+            </div>
+
+            <div class="timer-body">
+              <div>
+                <div class="badge">
+                  <span class="dot ${timer.running ? "on" : ""}" data-dot-id="${timer.id}"></span>
+                  <span data-badge-id="${timer.id}">${timer.zone} · ${timer.rideType}</span>
+                </div>
+
+                <div class="time" data-time-id="${timer.id}">${formatTime(elapsed)}</div>
+
+                <div class="status" data-status-id="${timer.id}">
+                  ${getWaitLabel(elapsed)} · Creado: ${timer.createdAt}<br>
+                  Goodies: ${getGoodiesSummary(timer)}
+                </div>
+              </div>
+
+              <div class="goodies-box">
+                <div class="goodies-title">Goodies consumed</div>
+                ${goodies.map(item => `
+                  <div class="goodie-row">
+                    <span>${item}</span>
+                    <button class="mini-btn" onclick="changeGoodie(${timer.id}, '${item.replaceAll("'", "\\'")}', -1)">-</button>
+                    <span class="count">${timer.consumedGoodies[item] || 0}</span>
+                    <button class="mini-btn" onclick="changeGoodie(${timer.id}, '${item.replaceAll("'", "\\'")}', 1)">+</button>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="${timer.running ? "btn-secondary" : "btn-primary"}" onclick="toggleTimer(${timer.id})">
+                ${timer.running ? "Pausar" : "Iniciar"}
+              </button>
+              <button class="btn-secondary" onclick="resetTimer(${timer.id})">Reset</button>
+              <button class="btn-danger wide" onclick="deleteTimer(${timer.id})">Borrar cronómetro</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      saveTimers();
+    }
+
+    function updateLiveDisplay() {
+      timers = timers.map(normalizeTimer);
+
+      timers.forEach(timer => {
+        const elapsed = getElapsedSeconds(timer);
+        const timeEl = document.querySelector(`[data-time-id="${timer.id}"]`);
+        const statusEl = document.querySelector(`[data-status-id="${timer.id}"]`);
+        const badgeEl = document.querySelector(`[data-badge-id="${timer.id}"]`);
+        const dotEl = document.querySelector(`[data-dot-id="${timer.id}"]`);
+
+        if (timeEl) timeEl.textContent = formatTime(elapsed);
+
+        if (statusEl) {
+          statusEl.innerHTML = `
+            ${getWaitLabel(elapsed)} · Creado: ${timer.createdAt}<br>
+            Goodies: ${getGoodiesSummary(timer)}
+          `;
+        }
+
+        if (badgeEl) badgeEl.textContent = `${timer.zone} · ${timer.rideType}`;
+
+        if (dotEl) {
+          if (timer.running) dotEl.classList.add("on");
+          else dotEl.classList.remove("on");
+        }
+      });
+
+      renderSummary();
+    }
+
+    function exportData() {
+      if (timers.length === 0) {
+        alert("No hay datos para exportar.");
+        return;
+      }
+
+      timers = timers.map(normalizeTimer);
+
+      const rows = [
+        [
+          "Date",
+          "Zone",
+          "Ride Type",
+          "Wait Time",
+          "Seconds",
+          "Status",
+          "Running",
+          ...goodies,
+          "Goodies Summary",
+          "Created At",
+          "Last Paused At"
+        ],
+        ...timers.map(timer => {
+          const elapsed = getElapsedSeconds(timer);
+
+          return [
+            timer.dateKey,
+            timer.zone,
+            timer.rideType,
+            formatTime(elapsed),
+            elapsed,
+            getWaitLabel(elapsed),
+            timer.running ? "Yes" : "No",
+            ...goodies.map(item => timer.consumedGoodies[item] || 0),
+            getGoodiesSummary(timer),
+            timer.createdAt,
+            timer.lastPausedAt || ""
+          ];
+        })
+      ];
+
+      const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "uber-wait-tracker.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    if (timers.length === 0) {
+      addTimer();
+    } else {
+      renderTimers();
+    }
+
+    setInterval(updateLiveDisplay, 1000);
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) updateLiveDisplay();
+    });
+
+    window.addEventListener("focus", updateLiveDisplay);
+  </script>
+</body>
+</html>
